@@ -34,6 +34,7 @@ torch.Tensor.__repr__ = lambda self: f"{self.shape}_{normal_repr(self)}"
 
 from transformers import (
     AutoTokenizer,
+    AutoConfig,
     BloomForCausalLM,
     BloomTokenizerFast,
     CTRLLMHeadModel,
@@ -444,7 +445,10 @@ def main():
     if args.num_hidden_layers is not None:
         model_kwargs["num_hidden_layers"] = args.num_hidden_layers
     # modified to work with quantized models
-    model = model_class.from_pretrained(args.model_name_or_path, **model_kwargs, torch_dtype=torch.float16, device_map="auto")
+    config = AutoConfig.from_pretrained(args.model_name_or_path)
+    config.quantization_config["disable_exllama"] = False
+    config.quantization_config["exllama_config"] = {"version":2}
+    model = model_class.from_pretrained(args.model_name_or_path, **model_kwargs, torch_dtype=torch.float16, device_map="cuda:0")
 
     if args.fp16:
         model.half()
