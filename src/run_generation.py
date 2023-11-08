@@ -512,70 +512,56 @@ def main():
     #     prompt_text = f'{args.prefix}{prompt_text}{args.suffix}'
     #     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     
-    # if not unlimiformer_args.test_unlimiformer:
-    #     encoded_prompt = encoded_prompt[:, -2048:]
-    #     encoded_prompt = encoded_prompt.to(args.device)
+    if not unlimiformer_args.test_unlimiformer:
+        encoded_prompt = encoded_prompt[:, -2048:]
+        encoded_prompt = encoded_prompt.to(args.device)
 
-    # if encoded_prompt.size()[-1] == 0:
-    #     input_ids = None
-    # else:
-    #     input_ids = encoded_prompt
+    if encoded_prompt.size()[-1] == 0:
+        input_ids = None
+    else:
+        input_ids = encoded_prompt
 
-    # if args.jit:
-    #     jit_input_texts = ["enable jit"]
-    #     jit_inputs = prepare_jit_inputs(jit_input_texts, model, tokenizer)
-    #     torch._C._jit_set_texpr_fuser_enabled(False)
-    #     model.config.return_dict = False
-    #     if hasattr(model, "forward"):
-    #         sig = inspect.signature(model.forward)
-    #     else:
-    #         sig = inspect.signature(model.__call__)
-    #     jit_inputs = tuple(jit_inputs[key] for key in sig.parameters if jit_inputs.get(key, None) is not None)
-    #     traced_model = torch.jit.trace(model, jit_inputs, strict=False)
-    #     traced_model = torch.jit.freeze(traced_model.eval())
-    #     traced_model(*jit_inputs)
-    #     traced_model(*jit_inputs)
+    if args.jit:
+        jit_input_texts = ["enable jit"]
+        jit_inputs = prepare_jit_inputs(jit_input_texts, model, tokenizer)
+        torch._C._jit_set_texpr_fuser_enabled(False)
+        model.config.return_dict = False
+        if hasattr(model, "forward"):
+            sig = inspect.signature(model.forward)
+        else:
+            sig = inspect.signature(model.__call__)
+        jit_inputs = tuple(jit_inputs[key] for key in sig.parameters if jit_inputs.get(key, None) is not None)
+        traced_model = torch.jit.trace(model, jit_inputs, strict=False)
+        traced_model = torch.jit.freeze(traced_model.eval())
+        traced_model(*jit_inputs)
+        traced_model(*jit_inputs)
 
-    #     model = _ModelFallbackWrapper(traced_model, model)
-
-    # model.eval()
-    # output_sequences = model.generate(
-    #     input_ids=input_ids,
-    #     # max_length=args.length + len(encoded_prompt[0]),
-    #     max_new_tokens=args.length,
-    #     temperature=args.temperature,
-    #     top_k=args.k,
-    #     top_p=args.p,
-    #     repetition_penalty=args.repetition_penalty,
-    #     do_sample=True,
-    #     num_return_sequences=args.num_return_sequences,
-    #     streamer=TextStreamer(tokenizer, skip_prompt=True) if args.stream_output else None,
-    # )
-
-    # # Remove the batch dimension when returning multiple sequences
-    # if len(output_sequences.shape) > 2:
-    #     output_sequences.squeeze_()
+        model = _ModelFallbackWrapper(traced_model, model)
 
     model.eval()
+    output_sequences = model.generate(
+        input_ids=input_ids,
+        # max_length=args.length + len(encoded_prompt[0]),
+        max_new_tokens=args.length,
+        temperature=args.temperature,
+        top_k=args.k,
+        top_p=args.p,
+        repetition_penalty=args.repetition_penalty,
+        do_sample=True,
+        num_return_sequences=args.num_return_sequences,
+        streamer=TextStreamer(tokenizer, skip_prompt=True) if args.stream_output else None,
+    )
+
+    # Remove the batch dimension when returning multiple sequences
+    if len(output_sequences.shape) > 2:
+        output_sequences.squeeze_()
+
     generated_sequences = []
 
     for prompt_text in prompts:
-        # Check if preprocessing is required
-        requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
-        if requires_preprocessing:
-            prepare_input = PREPROCESSING_FUNCTIONS.get(args.model_type)
-            prompt_text = prepare_input(args, model, tokenizer, prompt_text)
-        
-        # Apply prefix and suffix if provided
-        prompt_text = f'{args.prefix}{prompt_text}{args.suffix}'
-
         # Encode the prompt text
         encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
         encoded_prompt = encoded_prompt.to(args.device)
-
-        # Truncate encoded_prompt to the model's max length if needed
-        if not unlimiformer_args.test_unlimiformer:
-            encoded_prompt = encoded_prompt[:, -2048:]
 
         # Generate sequences
         output_sequences = model.generate(
