@@ -29,6 +29,8 @@ import numpy as np
 import torch
 import os
 
+import gzip
+
 normal_repr = torch.Tensor.__repr__
 torch.Tensor.__repr__ = lambda self: f"{self.shape}_{normal_repr(self)}"
 
@@ -364,6 +366,14 @@ class _ModelFallbackWrapper(GenerationMixin):
         return self._default._reorder_cache(past_key_values, beam_idx)
 
 
+def load_prompts(file_path):
+    prompts = []
+    with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+        for line in f:
+            prompts.append(line.strip())
+    return prompts
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -382,6 +392,7 @@ def main():
     )
 
     parser.add_argument("--prompt", type=str, default="")
+    parser.add_argument("--prompts_file_path", type=str, default="", help="Path to the .gz file containing prompts.")
     parser.add_argument("--length", type=int, default=100)
     parser.add_argument("--num_hidden_layers", type=int, default=None)
     parser.add_argument("--stop_token", type=str, default=None, help="Token at which text generation is stopped")
@@ -477,7 +488,11 @@ def main():
         else:
             model = Unlimiformer.convert_model(model, **unlimiformer_kwargs)
 
-    prompt_text = args.prompt if args.prompt else input("Model prompt >>> ")
+    if args.prompts_file_path:
+        prompts = load_prompts(args.prompts_file_path)
+    else:
+        prompt_text = args.prompt if args.prompt else input("Model prompt >>> ")
+
     # Check if prompt_text is a valid file name:
     if os.path.exists(prompt_text):
         with open(prompt_text, "r") as f:
@@ -548,27 +563,36 @@ def main():
 
     generated_sequences = []
 
-    for generated_sequence_idx, generated_sequence in enumerate(output_sequences):
-        print(f"=== GENERATED SEQUENCE {generated_sequence_idx + 1} (input length: {input_ids.shape[-1]}) ===")
-        generated_sequence = generated_sequence.tolist()
-        # generated_sequence = generated_sequence[len(encoded_prompt[0]):] + tokenizer.encode(' <end_of_prompt> ') + generated_sequence[:len(encoded_prompt[0])]
+    for prompt_text in prompts:
+        # Perform preprocessing if required
+        if requires_preprocessing:
+            prompt_text = prepare_input(args, model, tokenizer, prompt_text)
 
-        # Decode text
-        # text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
-        prompt_length = min(input_ids.shape[-1], model.unlimiformer.window_size()) if unlimiformer_args.test_unlimiformer else input_ids.shape[-1]
-        completion = tokenizer.decode(generated_sequence[prompt_length:])
+        # Encode the prompt
+        encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
 
-        # Remove all text after the stop token
-        # text = text[: text.find(args.stop_token) if args.stop_token else None]
+        # Ensure the encoded prompt is on the correct device
+        encoded_prompt = encoded_prompt.to(args.device)
 
-        # Add the prompt at the beginning of the sequence. Remove the excess text that was used for pre-processing
-        total_sequence = (
-            # prompt_text + 
-            '|||' + completion
+        # Generate the output sequences
+        output_sequences = model.generate(
+            input_ids=encoded_prompt,
+            # ... (other arguments for generation)
         )
 
-        generated_sequences.append(total_sequence)
-        print(total_sequence)
+        # Process the output sequences
+        for generated_sequence_idx, generated_sequence in enumerate(output_sequences):
+            print(f"=== GENERATED SEQUENCE {generated_sequence_idx + 1} ===")
+            generated_sequence = generated_sequence.tolist()
+
+            # Decode the generated sequence
+            completion = tokenizer.decode(generated_sequence[len(encoded_prompt[0]):], clean_up_tokenization_spaces=True)
+
+            # Add the prompt at the beginning of the sequence (optional)
+            total_sequence = prompt_text + '|||' + completion
+
+            generated_sequences.append(total_sequence)
+            print(total_sequence)
 
     return generated_sequences
 
