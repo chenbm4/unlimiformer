@@ -391,7 +391,7 @@ def main():
         help="Path to pre-trained model or shortcut name selected in the list: " + ", ".join(MODEL_CLASSES.keys()),
     )
 
-    # parser.add_argument("--prompt", type=str, default="")
+    parser.add_argument("--prompt", type=str, default="")
     parser.add_argument("--prompts_file_path", type=str, default="", help="Path to the .gz file containing prompts.")
     parser.add_argument("--length", type=int, default=100)
     parser.add_argument("--num_hidden_layers", type=int, default=None)
@@ -491,7 +491,12 @@ def main():
     if args.prompts_file_path:
         prompts = load_prompts(args.prompts_file_path)
     else:
-        raise ValueError("No prompts file path was provided.")
+        prompt_text = args.prompt if args.prompt else input("Model prompt >>> ")
+
+    # Check if prompt_text is a valid file name:
+    if os.path.exists(prompt_text):
+        with open(prompt_text, "r") as f:
+            prompt_text = f.read()
 
     # Different models need different input formatting and/or extra arguments
     requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
@@ -559,28 +564,35 @@ def main():
     generated_sequences = []
 
     for prompt_text in prompts:
-        # Encode the prompt text
+        # Perform preprocessing if required
+        if requires_preprocessing:
+            prompt_text = prepare_input(args, model, tokenizer, prompt_text)
+
+        # Encode the prompt
         encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
+
+        # Ensure the encoded prompt is on the correct device
         encoded_prompt = encoded_prompt.to(args.device)
 
-        # Generate sequences
+        # Generate the output sequences
         output_sequences = model.generate(
             input_ids=encoded_prompt,
             # ... (other arguments for generation)
         )
 
-        # Process each sequence
+        # Process the output sequences
         for generated_sequence_idx, generated_sequence in enumerate(output_sequences):
             print(f"=== GENERATED SEQUENCE {generated_sequence_idx + 1} ===")
             generated_sequence = generated_sequence.tolist()
 
             # Decode the generated sequence
-            text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
+            completion = tokenizer.decode(generated_sequence[len(encoded_prompt[0]):], clean_up_tokenization_spaces=True)
 
-            # Add the generated text to the list
-            generated_sequences.append(text)
-            print(text)
+            # Add the prompt at the beginning of the sequence (optional)
+            total_sequence = prompt_text + '|||' + completion
 
+            generated_sequences.append(total_sequence)
+            print(total_sequence)
 
     return generated_sequences
 
