@@ -443,7 +443,8 @@ def main():
     model_kwargs = {}
     if args.num_hidden_layers is not None:
         model_kwargs["num_hidden_layers"] = args.num_hidden_layers
-    model = model_class.from_pretrained(args.model_name_or_path, **model_kwargs)
+    # modified to work with quantized models
+    model = model_class.from_pretrained(args.model_name_or_path, **model_kwargs, torch_dtype=torch.float16, device_map="auto")
 
     if args.fp16:
         model.half()
