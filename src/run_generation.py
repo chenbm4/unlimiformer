@@ -560,6 +560,10 @@ def main():
     generated_sequences = []
 
     for prompt_text in prompts:
+        # Print the prompt text to verify it is correct
+        print("Prompt =")
+        print(prompt_text)
+        
         # Check if preprocessing is required
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
@@ -585,7 +589,7 @@ def main():
 
         # Process each sequence
         for generated_sequence_idx, generated_sequence in enumerate(output_sequences):
-            print(f"=== GENERATED SEQUENCE {generated_sequence_idx + 1} ===")
+            # print(f"=== GENERATED SEQUENCE {generated_sequence_idx + 1} ===")
             generated_sequence = generated_sequence.tolist()
 
             # Decode the generated sequence
@@ -593,7 +597,7 @@ def main():
 
             # Add the generated text to the list
             generated_sequences.append(text)
-            print(text)
+            # print(text)
 
 
     return generated_sequences
