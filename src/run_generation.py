@@ -494,23 +494,23 @@ def main():
         raise ValueError("No prompts file path was provided.")
 
     # Different models need different input formatting and/or extra arguments
-    requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
-    if requires_preprocessing:
-        prepare_input = PREPROCESSING_FUNCTIONS.get(args.model_type)
-        preprocessed_prompt_text = prepare_input(args, model, tokenizer, prompt_text)
+    # requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
+    # if requires_preprocessing:
+    #     prepare_input = PREPROCESSING_FUNCTIONS.get(args.model_type)
+    #     preprocessed_prompt_text = prepare_input(args, model, tokenizer, prompt_text)
 
-        if model.__class__.__name__ in ["TransfoXLLMHeadModel"]:
-            tokenizer_kwargs = {"add_space_before_punct_symbol": True}
-        else:
-            tokenizer_kwargs = {}
+    #     if model.__class__.__name__ in ["TransfoXLLMHeadModel"]:
+    #         tokenizer_kwargs = {"add_space_before_punct_symbol": True}
+    #     else:
+    #         tokenizer_kwargs = {}
 
-        encoded_prompt = tokenizer.encode(
-            preprocessed_prompt_text, add_special_tokens=False, return_tensors="pt", **tokenizer_kwargs
-        )
-    else:
-        # prefix = args.prefix if args.prefix else args.padding_text
-        prompt_text = f'{args.prefix}{prompt_text}{args.suffix}'
-        encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
+    #     encoded_prompt = tokenizer.encode(
+    #         preprocessed_prompt_text, add_special_tokens=False, return_tensors="pt", **tokenizer_kwargs
+    #     )
+    # else:
+    #     # prefix = args.prefix if args.prefix else args.padding_text
+    #     prompt_text = f'{args.prefix}{prompt_text}{args.suffix}'
+    #     encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
     
     if not unlimiformer_args.test_unlimiformer:
         encoded_prompt = encoded_prompt[:, -2048:]
