@@ -32,6 +32,7 @@ import os
 import json
 import argparse
 import xopen
+from tqdm import tqdm
 
 normal_repr = torch.Tensor.__repr__
 torch.Tensor.__repr__ = lambda self: f"{self.shape}_{normal_repr(self)}"
@@ -491,7 +492,7 @@ def main():
     
     generated_sequences = []
 
-    for question, prompt_text in data:
+    for question, prompt_text in tqdm(data, desc="Generating sequences"):
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
