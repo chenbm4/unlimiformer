@@ -31,6 +31,7 @@ import os
 
 import json
 import argparse
+import xopen
 
 normal_repr = torch.Tensor.__repr__
 torch.Tensor.__repr__ = lambda self: f"{self.shape}_{normal_repr(self)}"
@@ -483,16 +484,14 @@ def main():
 
     # Load JSON prompts from the file
     if os.path.exists(args.input_file):
-        with open(args.input_file, "r") as f:
+        with xopen(args.input_file) as f:
             data = json.load(f)
     else:
         raise ValueError(f"Input file {args.input_file} not found.")
     
     generated_sequences = []
 
-    for entry in data:
-        prompt_text = entry['prompt']
-
+    for question, prompt_text in data:
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
@@ -577,12 +576,12 @@ def main():
             )
 
             generated_sequences.append({
-                "question": entry['question'],
+                "question": question,
                 "completion": completion
             })
 
     # Write the generated sequences to an output file
-    with open(args.output_file, "w") as f:
+    with xopen(args.output_file, "w") as f:
         json.dump(generated_sequences, f, ensure_ascii=False, indent=4)
 
 
