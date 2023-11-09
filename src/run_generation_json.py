@@ -492,7 +492,7 @@ def main():
     
     generated_sequences = []
 
-    for question, prompt_text in tqdm(data, desc="Generating sequences"):
+    for question, prompt_text in tqdm(data.items(), desc="Generating sequences"):
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
