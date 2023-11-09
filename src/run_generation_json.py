@@ -33,6 +33,7 @@ import json
 import argparse
 from xopen import xopen
 from tqdm import tqdm
+from itertools import islice
 
 normal_repr = torch.Tensor.__repr__
 torch.Tensor.__repr__ = lambda self: f"{self.shape}_{normal_repr(self)}"
@@ -419,6 +420,7 @@ def main():
         help="Whether to use 16-bit (mixed) precision (through NVIDIA apex) instead of 32-bit",
     )
     parser.add_argument("--jit", action="store_true", help="Whether or not to use jit trace to accelerate inference")
+    parser.add_argument("--num_input_samples", type=int, default=-1, help="The number of samples to generate.")
 
     # args = parser.parse_args()
     args, unknown_args = parser.parse_known_args()
@@ -492,7 +494,13 @@ def main():
     
     generated_sequences = []
 
-    for question, prompt_text in tqdm(data.items(), desc="Generating sequences"):
+    num_input_samples = args.num_input_samples
+    if num_input_samples > 0:
+        iterator = islice(data.items(), num_input_samples)
+    else:
+        iterator = data.items()
+
+    for question, prompt_text in tqdm(iterator, total=(num_input_samples if num_input_samples > 0 else len(data)), desc="Generating sequences"):
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
