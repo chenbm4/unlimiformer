@@ -34,6 +34,7 @@ import argparse
 from xopen import xopen
 from tqdm import tqdm
 from itertools import islice
+import sys
 
 normal_repr = torch.Tensor.__repr__
 torch.Tensor.__repr__ = lambda self: f"{self.shape}_{normal_repr(self)}"
@@ -305,6 +306,14 @@ def generate_past_key_values(model, batch_size, seq_len):
     return past_key_values
 
 
+def block_print():
+    sys.stdout = open(os.devnull, 'w')
+
+
+def enable_print():
+    sys.stdout = sys.__stdout__
+
+
 def prepare_jit_inputs(inputs, model, tokenizer):
     batch_size = len(inputs)
     dummy_input = tokenizer.batch_encode_plus(inputs, return_tensors="pt")
@@ -500,6 +509,8 @@ def main():
     else:
         iterator = data.items()
 
+    block_print()
+
     for question, prompt_text in tqdm(iterator, total=(num_input_samples if num_input_samples > 0 else len(data)), desc="Generating sequences"):
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
@@ -589,6 +600,8 @@ def main():
                 "completion": completion
             })
 
+    enable_print()
+    
     # Write the generated sequences to an output file
     with xopen(args.output_file, "w") as f:
         json.dump(generated_sequences, f, ensure_ascii=False, indent=4)
