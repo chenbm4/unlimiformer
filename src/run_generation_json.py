@@ -31,7 +31,7 @@ import os
 
 import json
 import argparse
-import xopen
+from xopen import xopen
 from tqdm import tqdm
 
 normal_repr = torch.Tensor.__repr__
