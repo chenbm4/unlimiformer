@@ -598,7 +598,8 @@ def main():
 
     # Write the generated sequences to an output file
     with xopen(str(output_file_path), "w") as f:
-        json.dump(generated_sequences, f, ensure_ascii=False, indent=4)
+        for sequence in generated_sequences:
+            f.write(json.dumps(sequence, ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":
