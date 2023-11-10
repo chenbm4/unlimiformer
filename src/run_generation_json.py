@@ -504,7 +504,9 @@ def main():
     else:
         iterator = data.items()
 
-    for question, prompt_text in tqdm(iterator, total=(num_input_samples if num_input_samples > 0 else len(data)), desc="Generating sequences"):
+    for question, entry in tqdm(iterator, total=(num_input_samples if num_input_samples > 0 else len(data)), desc="Generating sequences"):
+        prompt_text = entry['prompt']
+        answers = entry['answers']
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
@@ -590,7 +592,8 @@ def main():
 
             generated_sequences.append({
                 "question": question,
-                "completion": completion
+                "model_answer": completion,
+                'answers': answers
             })
 
     # Write the generated sequences to an output file
