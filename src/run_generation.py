@@ -480,7 +480,7 @@ def main():
     prompt_text = args.prompt if args.prompt else input("Model prompt >>> ")
     # Check if prompt_text is a valid file name:
     if os.path.exists(prompt_text):
-        with xopen(prompt_text, "r") as f:
+        with open(prompt_text, "r") as f:
             prompt_text = f.read()
 
     # Different models need different input formatting and/or extra arguments
