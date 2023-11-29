@@ -488,7 +488,8 @@ def main():
 
     # Load JSON prompts from the file
     if os.path.exists(args.input_file):
-        with open(args.input_file, 'r') as f:
+        # Open the gzip compressed file
+        with gzip.open(args.input_file, 'rt', encoding='utf-8') as f:
             lines = f.readlines()
     else:
         raise ValueError(f"Input file {args.input_file} not found.")
