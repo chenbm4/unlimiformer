@@ -488,25 +488,25 @@ def main():
 
     # Load JSON prompts from the file
     if os.path.exists(args.input_file):
-        with xopen(args.input_file) as f:
-            data = json.load(f)
+        with open(args.input_file, 'r') as f:
+            lines = f.readlines()
     else:
         raise ValueError(f"Input file {args.input_file} not found.")
-    
+
     output_file_path = Path(args.output_file)
     output_file_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     generated_sequences = []
 
     num_input_samples = args.num_input_samples
     if num_input_samples > 0:
-        iterator = islice(data.items(), num_input_samples)
-    else:
-        iterator = data.items()
+        lines = lines[:num_input_samples]
 
-    for question, entry in tqdm(iterator, total=(num_input_samples if num_input_samples > 0 else len(data)), desc="Generating sequences"):
-        prompt_text = entry['prompt']
-        answers = entry['answers']
+    for line in tqdm(lines, desc="Generating sequences"):
+        entry = json.loads(line)
+        question = entry.get('question', '')
+        prompt_text = entry.get('prompt', '')
+        answers = entry.get('answers', [])
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
