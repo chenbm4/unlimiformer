@@ -503,7 +503,11 @@ def main():
         lines = lines[:num_input_samples]
 
     for line in tqdm(lines, desc="Generating sequences"):
-        entry = json.loads(line)
+        try:
+            entry = json.loads(line)
+        except json.decoder.JSONDecodeError as e:
+            print("Error decoding JSON:", e)
+            break
         question = entry.get('question', '')
         prompt_text = entry.get('prompt', '')
         answers = entry.get('answers', [])
