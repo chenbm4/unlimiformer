@@ -531,7 +531,8 @@ def main():
             encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
         
         if not unlimiformer_args.test_unlimiformer:
-            encoded_prompt = encoded_prompt[:, -2048:]
+            window_size = model.config.n_positions if hasattr(model.config, "n_positions") else 4096
+            encoded_prompt = encoded_prompt[:, -window_size:]
             encoded_prompt = encoded_prompt.to(args.device)
 
         if encoded_prompt.size()[-1] == 0:
