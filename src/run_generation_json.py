@@ -511,6 +511,7 @@ def main():
         question = entry.get('question', '')
         prompt_text = entry.get('prompt', '')
         answers = entry.get('answers', [])
+        gold_index = entry.get('gold_index', None)
         # Different models need different input formatting and/or extra arguments
         requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
         if requires_preprocessing:
@@ -598,7 +599,8 @@ def main():
             generated_sequences.append({
                 "question": question,
                 "model_answer": completion,
-                'answers': answers
+                'answers': answers,
+                'gold_index': gold_index
             })
 
     # Write the generated sequences to an output file
